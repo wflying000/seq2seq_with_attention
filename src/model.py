@@ -1,3 +1,4 @@
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,29 +10,31 @@ from configuration import Hypothesis
 
 class NMT(nn.Module):
     def __init__(self, config):
+        self.embed_size = config.embed_size
+        self.hidden_size = config.hidden_size
         embed_size = config.embed_size
         hidden_size = config.hidden_size
 
         self.src_embedding = nn.Embedding(
             num_embeddings=config.src_vocab_size, 
-            embedding_dim=embed_size, 
+            embedding_dim=config.embed_size, 
             padding_idx=config.src_pad_id,
         )
         self.tgt_embedding = nn.Embedding(
             num_embeddings=config.tgt_vocab_size,
-            embedding_dim=embed_size,
+            embedding_dim=config.embed_size,
             padding_idx=config.tgt_pad_id,
         )
 
         self.post_embed_cnn = nn.Conv1d(
-            in_channels=embed_size, 
-            out_channels=embed_size,
+            in_channels=config.embed_size, 
+            out_channels=config.embed_size,
             kernel_size=2,
             padding="same",
         )
         self.encoder = nn.LSTM(
-            input_size=embed_size,
-            hidden_size=hidden_size,
+            input_size=config.embed_size,
+            hidden_size=config.hidden_size,
             num_layers=1,
             bias=True,
             batch_first=False,
@@ -47,7 +50,9 @@ class NMT(nn.Module):
         self.att_projection = nn.Linear(hidden_size*2, hidden_size, bias=False)
         self.combined_output_projection = nn.Linear(hidden_size*3, hidden_size, bias=False)
         self.target_vocab_projection = nn.Linear(hidden_size, config.tgt_vocab_size, bias=False)
-        self.dropout = nn.Dropout(config.dropout)
+        self.dropout = nn.Dropout(config.dropout_rate)
+        self.dropout_rate = config.dropout_rate
+        self.vocab = config.vocab
 
         self.tgt_pad_id = config.tgt_pad_id
 
@@ -266,7 +271,7 @@ class NMT(nn.Module):
                                                                            src_encodings_att_linear.size(2))
 
             y_tm1 = torch.tensor([self.vocab.tgt[hyp[-1]] for hyp in hypotheses], dtype=torch.long, device=self.device)
-            y_t_embed = self.model_embeddings.target(y_tm1)
+            y_t_embed = self.tgt_embedding(y_tm1)
 
             # x = torch.cat([y_t_embed, att_tm1], dim=-1)
             x = torch.cat([att_tm1, y_t_embed], dim=-1)
@@ -325,3 +330,30 @@ class NMT(nn.Module):
         """ Determine which device to place the Tensors upon, CPU or GPU.
         """
         return self.src_embedding.weight.device
+    
+    @staticmethod
+    def load(model_path: str):
+        """ Load the model from a file.
+        @param model_path (str): path to model
+        """
+        params = torch.load(model_path, map_location=lambda storage, loc: storage)
+        args = params['args']
+        model = NMT(vocab=params['vocab'], **args)
+        model.load_state_dict(params['state_dict'])
+
+        return model
+
+    def save(self, path: str):
+        """ Save the odel to a file.
+        @param path (str): path to the model
+        """
+        print('save model parameters to [%s]' % path, file=sys.stderr)
+
+        params = {
+            'args': dict(embed_size=self.embed_size, hidden_size=self.hidden_size,
+                         dropout_rate=self.dropout_rate),
+            'vocab': self.vocab,
+            'state_dict': self.state_dict()
+        }
+
+        torch.save(params, path)
