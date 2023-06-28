@@ -1,25 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-CS224N 2022-23: Homework 4
-vocab.py: Vocabulary Generation
-Pencheng Yin <pcyin@cs.cmu.edu>
-Sahil Chopra <schopra8@stanford.edu>
-Vera Lin <veralin@stanford.edu>
-Siyan Li <siyanli@stanford.edu>
-
-Usage:
-    vocab.py --train-src=<file> --train-tgt=<file> [options] VOCAB_FILE
-
-Options:
-    -h --help                  Show this screen.
-    --train-src=<file>         File of training source sentences
-    --train-tgt=<file>         File of training target sentences
-    --size=<int>               vocab size [default: 50000]
-    --freq-cutoff=<int>        frequency cutoff [default: 2]
-"""
-
 import json
 import torch
 import sentencepiece as spm
@@ -39,14 +20,11 @@ def pad_sents(sents, pad_token):
     """
     sents_padded = []
 
-    ### YOUR CODE HERE (~6 Lines)
     max_length = max([len(x) for x in sents])
     for sent in sents:
         cur_len = len(sent)
         sent += [pad_token] * (max_length - cur_len)
         sents_padded.append(sent)
-
-    ### END YOUR CODE
 
     return sents_padded
 

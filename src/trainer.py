@@ -44,6 +44,8 @@ class Trainer():
             for idx, batch in tqdm(enumerate(self.train_dataloader), total=num_train_samples, leave=False):
                 src_ids = batch["src_ids"].to(device)
                 tgt_ids = batch["tgt_ids"].to(device)
+                src_ids = src_ids.transpose(0, 1)
+                tgt_ids = tgt_ids.transpose(0, 1)
                 src_lengths = batch["src_lengths"]
                 tgt_lengths = batch["tgt_lengths"]
 
@@ -166,6 +168,8 @@ class Trainer():
             for batch in tqdm(self.eval_dataloader, total=len(self.eval_dataloader), leave=False, desc="eval"):
                 src_ids = batch["src_ids"].to(device)
                 tgt_ids = batch["tgt_ids"].to(device)
+                src_ids = src_ids.transpose(0, 1)
+                tgt_ids = tgt_ids.transpose(0, 1)
                 src_lengths = batch["src_lengths"]
                 tgt_lengths = batch["tgt_lengths"]
 

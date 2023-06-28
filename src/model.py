@@ -10,6 +10,7 @@ from configuration import Hypothesis
 
 class NMT(nn.Module):
     def __init__(self, config):
+        super(NMT, self).__init__()
         self.embed_size = config.embed_size
         self.hidden_size = config.hidden_size
         embed_size = config.embed_size
@@ -55,6 +56,7 @@ class NMT(nn.Module):
         self.vocab = config.vocab
 
         self.tgt_pad_id = config.tgt_pad_id
+        self.config = config
 
     
     def forward(self, src_ids: torch.Tensor, tgt_ids: torch.Tensor, src_lengths: List[int]) -> torch.Tensor:
@@ -336,9 +338,9 @@ class NMT(nn.Module):
         """ Load the model from a file.
         @param model_path (str): path to model
         """
-        params = torch.load(model_path, map_location=lambda storage, loc: storage)
-        args = params['args']
-        model = NMT(vocab=params['vocab'], **args)
+        params = torch.load(model_path, map_location="cpu")
+        config = params["config"]
+        model = NMT(config)
         model.load_state_dict(params['state_dict'])
 
         return model
@@ -350,9 +352,7 @@ class NMT(nn.Module):
         print('save model parameters to [%s]' % path, file=sys.stderr)
 
         params = {
-            'args': dict(embed_size=self.embed_size, hidden_size=self.hidden_size,
-                         dropout_rate=self.dropout_rate),
-            'vocab': self.vocab,
+            'config': self.config,
             'state_dict': self.state_dict()
         }
 

@@ -4,7 +4,6 @@ def read_corpus(
     file_path, 
     source, 
     sp_model_path,
-    vocab_size=2500
 ):
     """ Read file, where each sentence is dilineated by a `\n`.
     @param file_path (str): path to file containing corpus
